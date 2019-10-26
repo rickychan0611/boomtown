@@ -45,6 +45,10 @@ module.exports = (app) => {
    *  For example: app.set('PG_HOST', process.env.PG_HOST || 'localhost')
    */
 
+  app.set('PG_HOST', process.env.PG_HOST || 'localhost')
+  app.set('PG_USER', process.env.PG_USER || 'postgres')
+  app.set('PG_PASSWORD', process.env.PG_PASSWORD || null)
+  app.set('PG_DB', process.env.PG_DB || 'boomtown')
   app.use(cookieParser());
 
   if (process.env.NODE_ENV === 'production') {
