@@ -24,7 +24,7 @@ module.exports = app => {
   return {
     // Date: DateScalar,
     Query: queryResolvers(app),
-    Mutation: mutationResolvers(app),
+    // Mutation: mutationResolvers(app),
     ...relationResolvers,
   };
 };

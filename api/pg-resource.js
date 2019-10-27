@@ -61,7 +61,7 @@ module.exports = postgres => {
        */
 
       const findUserQuery = {
-        text: "", // @TODO: Basic queries
+        text: "SELECT * FROM users WHERE id = $1", // @TODO: Basic queries
         values: [id],
       };
 
@@ -75,7 +75,7 @@ module.exports = postgres => {
        */
 
       const user = await postgres.query(findUserQuery);
-      return user;
+      return user.rows[0];
       // -------------------------------
     },
     async getItems(idToOmit) {
