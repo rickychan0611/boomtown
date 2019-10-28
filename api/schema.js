@@ -18,10 +18,10 @@ module.exports = gql`
     title: String!
     imageurl: String
     description: String
-    itemowner: User!
-    tags: [Tag]
+    itemowner: String!
+    tags: String
     created: String!
-    borrower: User
+    borrower: String
   }
 
   type User {
@@ -43,7 +43,7 @@ module.exports = gql`
     filename: String!
     mimetype: String!
     encoding: String!
-    itemid: ID!
+    itemid: String!
   }
 
   type AuthPayload {

@@ -60,11 +60,6 @@ module.exports = postgres => {
        *  You'll need to complete the query first before attempting this exercise.
        */
 
-      const findUserQuery = {
-        text: "SELECT * FROM users WHERE id = $1", // @TODO: Basic queries
-        values: [id],
-      };
-
       /**
        *  Refactor the following code using the error handling logic described above.
        *  When you're done here, ensure all of the resource methods in this file
@@ -74,11 +69,24 @@ module.exports = postgres => {
        *  If the password is incorrect throw 'User or Password incorrect'
        */
 
-      const user = await postgres.query(findUserQuery);
-      return user.rows[0];
+      // console.log("id" + id)
+      const findUserQuery = {
+        text: "SELECT * FROM users WHERE id = $1", // @TODO: Basic queries
+        values: [id], //$1 is the 1st arrg in
+      };
+      try {
+        const user = await postgres.query(findUserQuery);
+        console.log(user.rows[0].fullname)
+        if (!user.rows[0]) throw "user was not found";
+        return user.rows[0];
+      } catch (e) {
+        throw "500 error. User ID was not found, dude!";
+      }
+
       // -------------------------------
     },
     async getItems(idToOmit) {
+      // console.log('idToOmit'+ idToOmit)
       const items = await postgres.query({
         /**
          *  @TODO:
@@ -92,12 +100,18 @@ module.exports = postgres => {
          *  to your query text using string interpolation
          */
 
-        text: ``,
+        text: "SELECT * FROM items WHERE NOT itemowner = $1", // @TODO: Basic queries
         values: idToOmit ? [idToOmit] : [],
       });
-      return items.rows;
+      // console.log(items.rows)
+      try {
+        return items.rows;
+      } catch (e) {
+        throw "500 error. items were not found, dude!";
+      }
     },
     async getItemsForUser(id) {
+      
       const items = await postgres.query({
         /**
          *  @TODO:
@@ -106,7 +120,7 @@ module.exports = postgres => {
         text: ``,
         values: [id],
       });
-      return items.rows;
+      return items.rows[0];
     },
     async getBorrowedItemsForUser(id) {
       const items = await postgres.query({

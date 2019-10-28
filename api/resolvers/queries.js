@@ -18,6 +18,8 @@ const queryResolvers = app => ({
     return null;
   },
   async user(parent, { id }, { pgResource }, info) {
+    console.log('aaa '+ id)
+
     try {
       const user = await pgResource.getUserById(id);
       return user;
@@ -25,10 +27,13 @@ const queryResolvers = app => ({
       throw new ApolloError(e);
     }
   },
-  async items() {
-    // @TODO: Replace this mock return statement with the correct items from Postgres
-    return [];
-    // -------------------------------
+  async items(parent, { filter }, { pgResource }, info) {
+    try {
+      const item = await pgResource.getItems(filter);
+      return item;
+    } catch (e) {
+      throw new ApolloError(e);
+    }
   },
   async tags() {
     // @TODO: Replace this mock return statement with the correct tags from Postgres
