@@ -1,6 +1,16 @@
 const { ApolloError } = require("apollo-server-express");
 const { AuthenticationError } = require("apollo-server-express");
 const bcrypt = require("bcryptjs");
+const graphql = require('graphql');
+const {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLSchema,
+  GraphQLID,
+  GraphQLInt,
+  GraphQLList,
+  GraphQLNonNull
+    } = graphql; //get packages from graphql
 
 function setCookie({ tokenName, token, res }) {
   /**
@@ -45,96 +55,97 @@ function generateToken(user, secret) {
 // -------------------------------
 
 const mutationResolvers = app => ({
-  async signup(
-    parent,
-    {
-      user: { fullname, email, password },
-    },
-    { pgResource, req },
-  ) {
-    try {
-      /**
-       * @TODO: Authentication - Server
-       *
-       * Storing passwords in your project's database requires some basic security
-       * precautions. If someone gains access to your database, and passwords
-       * are stored in 'clear-text' your users accounts immediately compromised.
-       *
-       * The solution is to create a cryptographic hash of the password provided,
-       * and store that instead. The password can be decoded using the original password.
-       */
-      // @TODO: Use bcrypt to generate a cryptographic hash to conceal the user's password before storing it.
-      const hashedPassword = "";
-      // -------------------------------
+  // async signup(
+  //   parent,
+  //   {
+  //     user: { fullname, email, password },
+  //   },
+  //   { pgResource, req },
+  // ) {
+  //   try {
+  //     /**
+  //      * @TODO: Authentication - Server
+  //      *
+  //      * Storing passwords in your project's database requires some basic security
+  //      * precautions. If someone gains access to your database, and passwords
+  //      * are stored in 'clear-text' your users accounts immediately compromised.
+  //      *
+  //      * The solution is to create a cryptographic hash of the password provided,
+  //      * and store that instead. The password can be decoded using the original password.
+  //      */
+  //     // @TODO: Use bcrypt to generate a cryptographic hash to conceal the user's password before storing it.
+  //     const hashedPassword = "";
+  //     // -------------------------------
 
-      const user = await context.pgResource.createUser({
-        fullname: args.user.fullname,
-        email: args.user.email,
-        password: hashedPassword,
-      });
+  //     const user = await context.pgResource.createUser({
+  //       fullname: args.user.fullname,
+  //       email: args.user.email,
+  //       password: hashedPassword,
+  //     });
 
-      const token = generateToken(user, app.get("JWT_SECRET"));
+  //     const token = generateToken(user, app.get("JWT_SECRET"));
 
-      setCookie({
-        tokenName: app.get("JWT_COOKIE_NAME"),
-        token,
-        res: req.res,
-      });
+  //     setCookie({
+  //       tokenName: app.get("JWT_COOKIE_NAME"),
+  //       token,
+  //       res: req.res,
+  //     });
 
-      return {
-        toekn,
-        user,
-      };
-    } catch (e) {
-      throw new AuthenticationError(e);
-    }
-  },
+  //     return {
+  //       toekn,
+  //       user,
+  //     };
+  //   } catch (e) {
+  //     throw new AuthenticationError(e);
+  //   }
+  // },
 
-  async login(
-    parent,
-    {
-      user: { email, password },
-    },
-    { pgResource, req },
-  ) {
-    try {
-      const user = await context.pgResource.getUserAndPasswordForVerification(
-        args.user.email,
-      );
-      if (!user) throw "User was not found.";
-      /**
-       *  @TODO: Authentication - Server
-       *
-       *  To verify the user has provided the correct password, we'll use the provided password
-       *  they submitted from the login form to decrypt the 'hashed' version stored in out database.
-       */
-      // Use bcrypt to compare the provided password to 'hashed' password stored in your database.
-      const valid = false;
-      // -------------------------------
-      if (!valid) throw "Invalid Password";
+  // async login(
+  //   parent,
+  //   {
+  //     user: { email, password },
+  //   },
+  //   { pgResource, req },
+  // ) {
+  //   try {
+  //     const user = await context.pgResource.getUserAndPasswordForVerification(
+  //       args.user.email,
+  //     );
+  //     if (!user) throw "User was not found.";
+  //     /**
+  //      *  @TODO: Authentication - Server
+  //      *
+  //      *  To verify the user has provided the correct password, we'll use the provided password
+  //      *  they submitted from the login form to decrypt the 'hashed' version stored in out database.
+  //      */
+  //     // Use bcrypt to compare the provided password to 'hashed' password stored in your database.
+  //     const valid = false;
+  //     // -------------------------------
+  //     if (!valid) throw "Invalid Password";
 
-      const token = generateToken(user, app.get("JWT_SECRET"));
+  //     const token = generateToken(user, app.get("JWT_SECRET"));
 
-      setCookie({
-        tokenName: app.get("JWT_COOKIE_NAME"),
-        token,
-        res: req.res,
-      });
+  //     setCookie({
+  //       tokenName: app.get("JWT_COOKIE_NAME"),
+  //       token,
+  //       res: req.res,
+  //     });
 
-      return {
-        token,
-        user,
-      };
-    } catch (e) {
-      throw new AuthenticationError(e);
-    }
-  },
+  //     return {
+  //       token,
+  //       user,
+  //     };
+  //   } catch (e) {
+  //     throw new AuthenticationError(e);
+  //   }
+  // },
 
-  logout(parent, args, context) {
-    context.req.res.clearCookie(app.get("JWT_COOKIE_NAME"));
-    return true;
-  },
+  // logout(parent, args, context) {
+  //   context.req.res.clearCookie(app.get("JWT_COOKIE_NAME"));
+  //   return true;
+  // },
   async addItem(parent, args, context, info) {
+    console.log(args)
     /**
      *  @TODO: Destructuring
      *
@@ -147,10 +158,11 @@ const mutationResolvers = app => ({
      *  Again, you may look at the user resolver for an example of what
      *  destructuring should look like.
      */
-    const user = await jwt.decode(context.token, app.get("JWT_SECRET"));
+    //const user = await jwt.decode(context.token, app.get("JWT_SECRET"));
     const newItem = await context.pgResource.saveNewItem({
-      item: args.item,
-      user,
+      item: args,
+      user: 0
+      //user: user,
     });
     return newItem;
   },

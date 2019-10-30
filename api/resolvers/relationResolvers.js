@@ -13,16 +13,17 @@ const relationResolvers = {
      *
      */
     // @TODO: Uncomment these lines after you define the User type with these fields
-    // items() {
+    items() {
+      // @TODO: Replace this mock return statement with the correct items from Postgres
+      const item = pgResource.getItemsForUser(id);
+      return item;      // -------------------------------
+    },
+    borrowed() {
     //   // @TODO: Replace this mock return statement with the correct items from Postgres
-    //   return []
+    const item = pgResource.getBorrowedItemsForUser(id);
+    return item;
     //   // -------------------------------
-    // },
-    // borrowed() {
-    //   // @TODO: Replace this mock return statement with the correct items from Postgres
-    //   return []
-    //   // -------------------------------
-    // }
+    }
     // -------------------------------
   },
 
@@ -38,21 +39,34 @@ const relationResolvers = {
      *
      */
     // @TODO: Uncomment these lines after you define the Item type with these fields
-    // async itemowner() {
-    //   // @TODO: Replace this mock return statement with the correct user from Postgres
-    //   return {
-    //     id: 29,
-    //     fullname: "Mock user",
-    //     email: "mock@user.com",
-    //     bio: "Mock user. Remove me."
-    //   }
-    //   // -------------------------------
-    // },
-    // async tags() {
-    //   // @TODO: Replace this mock return statement with the correct tags for the queried Item from Postgres
-    //   return []
-    //   // -------------------------------
-    // },
+    async itemowner(parent, { id }, { pgResource }, info) {
+      console.log('aaa '+ id)
+  
+      try {
+        const user = await pgResource.getUserById(id);
+        return user;
+      } catch (e) {
+        throw new ApolloError(e);
+      }
+    },
+    async tags(parent, { id }, { pgResource }, info) {
+      try {
+        const tag = await pgResource.getTags();
+        return tag;
+      } catch (e) {
+        throw new ApolloError(e);
+      }
+    },
+    async borrower(parent, { id }, { pgResource }, info) {
+      console.log('aaa '+ id)
+  
+      try {
+        const user = await pgResource.getUserById(id);
+        return user;
+      } catch (e) {
+        throw new ApolloError(e);
+      }
+    },
     // async borrower() {
     //   /**
     //    * @TODO: Replace this mock return statement with the correct user from Postgres

@@ -11,16 +11,16 @@ const { gql } = require("apollo-server-express");
  * We will create the custom Date scalar together.
  */
 module.exports = gql`
-  # scalar Date
+  scalar Date
 
   type Item {
     id: ID!
     title: String!
     imageurl: String
     description: String
-    itemowner: String!
+    itemowner: String
     tags: String
-    created: String!
+    created: String
     borrower: String
   }
 
@@ -51,8 +51,8 @@ module.exports = gql`
   }
 
   input AssignedTag {
-    id: ID!
-    title: String!
+    id: ID
+    title: String
   }
 
   input AssignedBorrower {
@@ -69,12 +69,16 @@ module.exports = gql`
     user(id: ID!): User
     viewer: User
     items(filter: ID): [Item]
+    itemsById(id: ID!) : [Item]
+    borrowedItemsForUser(id: ID!) : [Item]
+    tagsForItem(id: ID!) : [Tag]
     tags: [Tag]
   }
 
   type Mutation {
     addItem(
-      item: NewItemInput!
+      id: ID
+      title: String
     ): Item
   }
 `;

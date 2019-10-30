@@ -40,6 +40,8 @@ module.exports = postgres => {
       }
     },
     async getUserById(id) {
+
+      try {
       /**
        *  @TODO: Handling Server Errors
        *
@@ -71,10 +73,9 @@ module.exports = postgres => {
 
       // console.log("id" + id)
       const findUserQuery = {
-        text: "SELECT * FROM users WHERE id = $1", // @TODO: Basic queries
+        text: `SELECT * FROM users WHERE id = $1`, // @TODO: Basic queries
         values: [id], //$1 is the 1st arrg in
       };
-      try {
         const user = await postgres.query(findUserQuery);
         console.log(user.rows[0].fullname)
         if (!user.rows[0]) throw "user was not found";
@@ -100,7 +101,7 @@ module.exports = postgres => {
          *  to your query text using string interpolation
          */
 
-        text: "SELECT * FROM items WHERE NOT itemowner = $1", // @TODO: Basic queries
+        text: `SELECT * FROM items WHERE NOT itemowner = $1`, // @TODO: Basic queries
         values: idToOmit ? [idToOmit] : [],
       });
       // console.log(items.rows)
@@ -111,42 +112,72 @@ module.exports = postgres => {
       }
     },
     async getItemsForUser(id) {
-      
+      try {
       const items = await postgres.query({
         /**
          *  @TODO:
-         *  Get all Items for user using their id
+         *  Get all Items for user using their id, DONE!
          */
-        text: ``,
+        text: `SELECT * FROM items WHERE itemowner = $1`,
         values: [id],
       });
-      return items.rows[0];
+        return items.rows;
+      } catch (e) {
+        throw "500 error. items were not found, dude!";
+      }
     },
     async getBorrowedItemsForUser(id) {
+      try {
       const items = await postgres.query({
         /**
          *  @TODO:
          *  Get all Items borrowed by user using their id
          */
-        text: ``,
+        text: `SELECT * FROM items WHERE borrower = $1`,
         values: [id],
       });
       return items.rows;
+    }
+    catch (e) {
+      throw "500 error. borrower id were not found";
+    }
     },
     async getTags() {
-      const tags = await postgres.query(/* @TODO: Basic queries */);
-      return tags.rows;
+      try {
+      console.log('getTags')
+      const tags = await postgres.query({
+        text: "SELECT * FROM tags",
+        values: [],
+      });
+        return tags.rows;
+      }
+      catch (e) {
+        throw "500 error. tags were not found";
+      }
     },
     async getTagsForItem(id) {
-      const tagsQuery = {
-        text: ``, // @TODO: Advanced query Hint: use INNER JOIN
+      try{
+      const tagsQuery = await postgres.query({
+        text: 
+        `SELECT * FROM tags_items
+        INNER JOIN items
+        ON tags_items.item_id = items.id
+        INNER JOIN tags
+        ON tags_items.tag_id = tags.id
+        WHERE items.id = $1
+        `,
         values: [id],
-      };
-
-      const tags = await postgres.query(tagsQuery);
-      return tags.rows;
+      });
+      console.log(tagsQuery.rows)
+      //const tags = await postgres.query(tagsQuery);
+      return tagsQuery.rows;
+    }
+    catch (e) {
+      throw "500 error. item id were not found";
+    }
     },
     async saveNewItem({ item, user }) {
+      console.log("saveNewItem triggered "+ item)
       /**
        *  @TODO: Adding a New Item
        *
@@ -164,7 +195,27 @@ module.exports = postgres => {
        *
        *  Read the method and the comments carefully before you begin.
        */
-
+      try {
+        const items = await postgres.query({
+          text: `INSERT INTO items VALUES ($1, $2, $3, $4, $5, $6, $7, $8) returning $1
+          `,
+          values: [
+            item.id, 
+            item.title,
+            item.imageurl,
+            item.description,
+            item.itemowner,
+            item.tags,
+            item.created,
+            item.borrower
+          ],
+        });
+        console.log('return' + JSON.stringify(items.rows))
+        return items.rows;
+      }
+      catch (e) {
+        throw e;
+      }
       return new Promise((resolve, reject) => {
         /**
          * Begin transaction by opening a long-lived connection
@@ -175,8 +226,12 @@ module.exports = postgres => {
           try {
             // Begin postgres transaction
             client.query("BEGIN", async err => {
+              console.log('resolve ', resolve)
               const { title, description, tags } = item;
-
+              const newItemInsert = {
+                text: "", // @TODO: Authentication - Server
+                values: [title, description, tags],
+              };
               // Generate new Item query
               // @TODO
               // -------------------------------
