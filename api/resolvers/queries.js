@@ -25,15 +25,21 @@ const queryResolvers = app => ({
       throw new ApolloError(e);
     }
   },
-  async items() {
-    // @TODO: Replace this mock return statement with the correct items from Postgres
-    return [];
-    // -------------------------------
+  async items(parent, { id }, { pgResource }, info) {
+    try {
+      const items = await pgResource.getItems(id);
+      return items;
+    } catch (e) {
+      throw new ApolloError(e);
+    }
   },
-  async tags() {
-    // @TODO: Replace this mock return statement with the correct tags from Postgres
-    return [];
-    // -------------------------------
+  async tags(parent, { id }, { pgResource }, info)  {
+    try {
+      const tags = await pgResource.getTags(id);
+      return tags;
+    } catch (e) {
+      throw new ApolloError(e);
+    }
   },
 });
 module.exports = queryResolvers;

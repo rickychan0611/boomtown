@@ -1,6 +1,7 @@
 const { ApolloError } = require("apollo-server-express");
 const { AuthenticationError } = require("apollo-server-express");
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken')
 
 function setCookie({ tokenName, token, res }) {
   /**
@@ -18,6 +19,7 @@ function setCookie({ tokenName, token, res }) {
    */
   // Refactor this method with the correct configuration values.
   res.cookie(tokenName, token, {
+    expiresIn: "2h"
     // @TODO: Supply the correct configuration values for our cookie here
   });
   // -------------------------------
@@ -35,7 +37,7 @@ function generateToken(user, secret) {
    *  which can be decoded using the app secret to retrieve the stateless session.
    */
   // Refactor this return statement to return the cryptographic hash (the Token)
-  return "";
+  return jwt.sign(user)
   // -------------------------------
 }
 
@@ -64,7 +66,7 @@ const mutationResolvers = app => ({
        * and store that instead. The password can be decoded using the original password.
        */
       // @TODO: Use bcrypt to generate a cryptographic hash to conceal the user's password before storing it.
-      const hashedPassword = "";
+      const hashedPassword = await bcrypt.hash(input.password, 4);
       // -------------------------------
 
       const user = await context.pgResource.createUser({
@@ -108,10 +110,12 @@ const mutationResolvers = app => ({
        *  To verify the user has provided the correct password, we'll use the provided password
        *  they submitted from the login form to decrypt the 'hashed' version stored in out database.
        */
+      
       // Use bcrypt to compare the provided password to 'hashed' password stored in your database.
-      const valid = false;
-      // -------------------------------
-      if (!valid) throw "Invalid Password";
+      const isPasswordValid = await bcrypt.compare(input.password, user.password);
+      if (!isPasswordValid){
+        throw "Invalid Password";
+      }
 
       const token = generateToken(user, app.get("JWT_SECRET"));
 
@@ -135,6 +139,7 @@ const mutationResolvers = app => ({
     return true;
   },
   async addItem(parent, args, context, info) {
+    console.log(args)
     /**
      *  @TODO: Destructuring
      *
@@ -149,8 +154,8 @@ const mutationResolvers = app => ({
      */
     const user = await jwt.decode(context.token, app.get("JWT_SECRET"));
     const newItem = await context.pgResource.saveNewItem({
-      item: args.item,
-      user,
+      item: args,
+      user: user,
     });
     return newItem;
   },
