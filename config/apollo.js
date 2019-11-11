@@ -3,6 +3,7 @@ const { makeExecutableSchema } = require("graphql-tools");
 
 const typeDefs = require("../api/schema");
 let resolvers = require("../api/resolvers");
+const { AuthDirective } = require("../api/custom-directives");
 
 module.exports = ({ app, pgResource }) => {
   resolvers = resolvers(app);
@@ -21,24 +22,33 @@ module.exports = ({ app, pgResource }) => {
   const schema = makeExecutableSchema({
     typeDefs,
     resolvers,
+    schemaDirectives: {
+      auth: AuthDirective
+    }
   });
   // -------------------------------
 
   const apolloServer = new ApolloServer({
     context: ({ req }) => {
       // @TODO: Uncomment this later when we add auth (to be added to Apollo's context)
-      // const tokenName = app.get("JWT_COOKIE_NAME")
-      // const token = req ? req.cookies[tokenName] : undefined
-      // let user = null
+      const tokenName = app.get("JWT_COOKIE_NAME")
+      const token = req ? req.cookies[tokenName] : undefined
+      let user = null
       // -------------------------------
       try {
+        console.log('tokenname' + tokenName)
         // TODO:
         // If there is a token, verify that token to get user info and assign it to user variable
+        if (token) {
+          user = getUser(token)
+        }
         return {
-          pgResource
+          pgResource,
+          req,
+          user
         }
       } catch (e) {
-        // throw error
+        throw error
       }
     },
     schema,

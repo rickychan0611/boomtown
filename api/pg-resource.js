@@ -9,11 +9,12 @@ module.exports = postgres => {
   return {
     async createUser({ fullname, email, password }) {
       const newUserInsert = {
-        text: "INSERT INTO users VALUES ($1, $2, $3)", // @TODO: Authentication - Server
+        text: "INSERT INTO users (fullname, email, password) VALUES ($1, $2, $3) RETURNING *", // @TODO: Authentication - Server
         values: [fullname, email, password],
       };
       try {
-        const user = await postgres.query(newUserInsert);
+        const user = await postgres.query(newUserInsert.text, newUserInsert.values);
+        console.log(user.rows[0].fullname)
         return user.rows[0];
       } catch (e) {
         switch (true) {
@@ -22,7 +23,8 @@ module.exports = postgres => {
           case /users_email_key/.test(e.message):
             throw "An account with this email already exists.";
           default:
-            throw "There was a problem creating your account.";
+            throw e
+            // throw "There was a problem creating your account.";
         }
       }
     },
@@ -34,6 +36,7 @@ module.exports = postgres => {
       try {
         const user = await postgres.query(findUserQuery);
         if (!user) throw "User was not found.";
+        console.log("loging" + JSON.stringify(user.rows[0]))
         return user.rows[0];
       } catch (e) {
         throw "User was not found.";
@@ -71,7 +74,7 @@ module.exports = postgres => {
          *  to your query text using string interpolation
          */
 
-        text: `SELECT * FROM items`, // @TODO: Basic queries
+      text: `SELECT * FROM items WHERE (itemowner != $1)`, // @TODO: Basic queries
         values: idToOmit ? [idToOmit] : [],
       });
       // console.log(items.rows)
@@ -83,6 +86,7 @@ module.exports = postgres => {
     },
     async getItemsForUser(id) {
       try {
+
       const items = await postgres.query({
         /**
          *  @TODO:
@@ -91,6 +95,8 @@ module.exports = postgres => {
         text: `SELECT * FROM items WHERE itemowner = $1`,
         values: [id],
       });
+
+      console.log(items.rows)
         return items.rows;
       } catch (e) {
         throw "500 error. items were not found, dude!";
@@ -112,9 +118,24 @@ module.exports = postgres => {
       throw "500 error. borrower id were not found";
     }
     },
+    async getBorrower(id) {
+      try {
+      console.log("getBorrower" + JSON.stringify(id))
+      const items = await postgres.query({
+        text: `SELECT * FROM users 
+        WHERE id = $1`,
+        values: [id]
+      });
+      console.log("id: " + id  + JSON.stringify(items.rows[0]))
+      return items.rows[0];
+    }
+    catch (e) {
+      throw e + "500 error. borrower id were not found";
+    }
+    },
     async getTags() {
       try {
-      console.log('getTags')
+      // console.log('getTags')
       const tags = await postgres.query({
         text: "SELECT * FROM tags",
         values: [],
@@ -127,27 +148,28 @@ module.exports = postgres => {
     },
     async getTagsForItem(id) {
       try{
+        console.log('getTagsForItem run')
       const tagsQuery = await postgres.query({
         text: 
-        `SELECT * FROM tags_items
+        `
+        SELECT * FROM tags_items
         INNER JOIN items
         ON tags_items.item_id = items.id
         INNER JOIN tags
         ON tags_items.tag_id = tags.id
         WHERE items.id = $1
-        `,
+        ` ,
         values: [id],
       });
       console.log(tagsQuery.rows)
-      //const tags = await postgres.query(tagsQuery);
       return tagsQuery.rows;
     }
     catch (e) {
-      throw "500 error. item id were not found";
+      throw e;
     }
     },
     async saveNewItem({ item, user }) {
-      console.log("saveNewItem triggered "+ item)
+      console.log("saveNewItem triggered "+ JSON.stringify(item))
       /**
        *  @TODO: Adding a New Item
        *
@@ -162,34 +184,9 @@ module.exports = postgres => {
        *  To achieve #3 we'll ue something called a Postgres Transaction!
        *  The code for the transaction has been provided for you, along with
        *  helpful comments to help you get started.
-       *
+       *p
        *  Read the method and the comments carefully before you begin.
        */
-      try {
-        const items = await postgres.query({
-          text: `INSERT INTO items VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          `,
-          values: [
-            item.id, 
-            item.title,
-            item.imageurl,
-            item.description,
-            item.itemowner,
-            item.tags,
-            item.created,
-            item.borrower
-          ],
-        });
-        const result = await postgres.query({
-          text: `SELECT * FROM items WHERE id = $1`,
-          values: [item.id]
-        })
-        console.log('return' + JSON.stringify(items.rows))
-        return result.rows;
-      }
-      catch (e) {
-        throw e;
-      }
       return new Promise((resolve, reject) => {
         /**
          * Begin transaction by opening a long-lived connection
@@ -201,26 +198,20 @@ module.exports = postgres => {
             // Begin postgres transaction
             client.query("BEGIN", async err => {
               console.log('resolve ', resolve)
-              const { title, description, tags } = item;
+              const { title, description, tags } = item.input;
+              console.log(title)
               const newItemInsert = {
-                text: "", // @TODO: Authentication - Server
-                values: [title, description, tags],
+                text: "INSERT INTO items (title, description) VALUES ($1, $2) RETURNING *",// @TODO: Authentication - Server
+                values: [title, description],
               };
-              // Generate new Item query
-              // @TODO
-              // -------------------------------
+              const newItem = await client.query(newItemInsert.text, newItemInsert.values)
 
-              // Insert new Item
-              // @TODO
-              // -------------------------------
-
-              // Generate tag relationships query (use the'tagsQueryString' helper function provided)
-              // @TODO
-              // -------------------------------
-
-              // Insert tags
-              // @TODO
-              // -------------------------------
+              console.log(JSON.stringify(tags[0].id))
+              console.log(JSON.stringify(tagsQueryString(tags[0].id, newItem.rows[0].id, "VALUES ")))
+              const insertItemTags = "INSERT INTO tags_items (tag_id, item_id)" 
+                + tagsQueryString(tags[0].id, newItem.rows[0].id, "VALUES ")
+              const insertItemTagsValues = tags[0].id
+              await client.query(insertItemTags, insertItemTagsValues)
 
               // Commit the entire transaction!
               client.query("COMMIT", err => {
@@ -230,7 +221,7 @@ module.exports = postgres => {
                 // release the client back to the pool
                 done();
                 // Uncomment this resolve statement when you're ready!
-                // resolve(newItem.rows[0])
+                 resolve(newItem.rows[0])
                 // -------------------------------
               });
             });

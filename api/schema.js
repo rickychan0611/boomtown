@@ -11,6 +11,7 @@ const { gql } = require("apollo-server-express");
  * We will create the custom Date scalar together.
  */
 module.exports = gql`
+  directive @auth on FIELD_DEFINITION
   scalar Date
 
   type Item {
@@ -28,6 +29,10 @@ module.exports = gql`
     items : [Item]
   }
 
+  type Users {
+    items : [User]
+  }
+
   type User {
     id: ID!
     email: String!
@@ -35,11 +40,16 @@ module.exports = gql`
     bio: String
     items: [Item]
     borrowed: [Item]
+    password: String!
   }
   
+  type Tags {
+    tags : [Tag]
+  }
+
   type Tag {
     id: ID!
-    title: String!
+    tag_title: String!
   }
 
   type File {
@@ -51,12 +61,13 @@ module.exports = gql`
   }
 
   type AuthPayload {
-    _: Boolean
+    token: String
+    user: User
   }
 
   input AssignedTag {
-    id: ID!
-    title: String!
+    id: [ID]!
+ 
   }
 
   input AssignedBorrower {
@@ -70,20 +81,14 @@ module.exports = gql`
   }
 
   type Query {
-    user(id: ID!): User
+    user(id: ID!): User @auth
     viewer: User
-    items(filter: ID): [Item]
+    items(id: ID): [Item]
     tags: [Tag]
+    tag(id: ID!): Tag
   }
 
-  type Mutation {
-    addItem(
-      input: NewItemInput!): Item
-    signup(input: signupInput): User
-    login(input: loginInput):User
-   }
-  
-   input loginInput {
+  input LoginInput {
     email:String!
     password: String!
    }
@@ -92,9 +97,18 @@ module.exports = gql`
      token: String
    }
 
-   input signupInput {
-     name: String!
-     email: String!
-     password: String!
+   input SignupInput {
+     fullname: String
+     email: String
+     password: String
    }
+
+  type Mutation {
+    addItem(item: NewItemInput!): Item
+    signup(user: SignupInput!): AuthPayload!
+    login(user: LoginInput!): AuthPayload!
+    logout(user: LoginInput!): AuthPayload!
+   }
+  
+
 `;

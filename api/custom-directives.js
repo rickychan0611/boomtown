@@ -24,6 +24,10 @@ class AuthDirective extends SchemaDirectiveVisitor {
       const field = fields[fieldName];
       const { resolve = defaultFieldResolver } = field;
       field.resolve = async function(parent, args, context, info) {
+        // console.log(context)
+        if (!context.user ){
+          throw ('you must be logged in')
+        }
         /**
          * @TODO: Authentication - Server
          *

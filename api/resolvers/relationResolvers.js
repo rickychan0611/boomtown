@@ -14,21 +14,21 @@ const relationResolvers = {
      *
      */
     // @TODO: Uncomment these lines after you define the User type with these fields
-    async items(items) {
+    async items(parent, args, {pgResource}, info) {
       // @TODO: Replace this mock return statement with the correct items from Postgres
       try {
-        const item = await pgResource.getItems(items.id);
-        return user;
+        const item = await pgResource.getItemsForUser(parent.id);
+        return item;
       } catch (e) {
         throw new ApolloError(e);
       }
       // -------------------------------
     },
-    async borrowed() {
+    async borrowed(parent, args, {pgResource}, info) {
     //   // @TODO: Replace this mock return statement with the correct items from Postgres
       try {
-        const item = await pgResource.getItems(items.id);
-        return user;
+        const item = await pgResource.getBorrowedItemsForUser(parent.id);
+        return item;
       } catch (e) {
         throw new ApolloError(e);
       }
@@ -50,46 +50,37 @@ const relationResolvers = {
      *
      */
     // @TODO: Uncomment these lines after you define the Item type with these fields
-    async itemowner(item) {
+    async borrower (parent, args, {pgResource}, info) {
       // @TODO: Replace this mock return statement with the correct user from Postgresß
-      console.log('item = ' + JSON.stringify(item))
       try {
-        const user = await pgResource.getUserById(item.id);
+        const user = await pgResource.getBorrower(parent.borrower);
         return user;
       } catch (e) {
         throw new ApolloError(e);
       }
-       // return {
-      //   id: 1,
-      //   fullname: "Mock user",
-      //   email: "mock@user.com",
-      //   bio: "Mock user. Remove me."
-      // }
-     
-      // -------------------------------
     },
-    async tags(item) {
+    async tags(parent, args, {pgResource}, info) {
       // @TODO: Replace this mock return statement with the correct tags for the queried Item from Postgres
       try {
-        const tags = await pgResource.getTagsForItem(item.id);
+        const tags = await pgResource.getTagsForItem(parent.id);
         return tags;
       } catch (e) {
         throw new ApolloError(e);
       }    // -------------------------------
     },
-    async borrower(item) {
-      /**
-       * @TODO: Replace this mock return statement with the correct user from Postgres
-       * or null in the case where the item has not been borrowed.
-       */
-      try {
-        const user = await pgResource.getUserById(item.id);
-        return user;
-      } catch (e) {
-        throw new ApolloError(e);
-      } 
-      // -------------------------------
-    }
+    // async borrower(item) {
+    //   /**
+    //    * @TODO: Replace this mock return statement with the correct user from Postgres
+    //    * or null in the case where the item has not been borrowed.
+    //    */
+    //   try {
+    //     const user = await pgResource.getUserById(item.id);
+    //     return user;
+    //   } catch (e) {
+    //     throw new ApolloError(e);
+    //   } 
+    //   // -------------------------------
+    // }
     // -------------------------------
   }
 };

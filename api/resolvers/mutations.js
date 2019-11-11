@@ -1,7 +1,17 @@
 const { ApolloError } = require("apollo-server-express");
 const { AuthenticationError } = require("apollo-server-express");
 const bcrypt = require("bcryptjs");
-const jwt = require('jsonwebtoken')
+const graphql = require('graphql');
+const  jwt  =  require('jsonwebtoken');
+const {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLSchema,
+  GraphQLID,
+  GraphQLInt,
+  GraphQLList,
+  GraphQLNonNull
+    } = graphql; //get packages from graphql
 
 function setCookie({ tokenName, token, res }) {
   /**
@@ -19,7 +29,10 @@ function setCookie({ tokenName, token, res }) {
    */
   // Refactor this method with the correct configuration values.
   res.cookie(tokenName, token, {
-    expiresIn: "2h"
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 2*(60*60*1000)
+    
     // @TODO: Supply the correct configuration values for our cookie here
   });
   // -------------------------------
@@ -37,7 +50,15 @@ function generateToken(user, secret) {
    *  which can be decoded using the app secret to retrieve the stateless session.
    */
   // Refactor this return statement to return the cryptographic hash (the Token)
-  return jwt.sign(user)
+  const  expiresIn  =  24  *  60  *  60;
+  const SECRET_KEY = "secretkey";
+  console.log(id)
+  const  accessToken  =  jwt.sign({ id, email,fullname,bio }, SECRET_KEY, {
+      expiresIn:  expiresIn
+  });
+
+  console.log('token'+ accessToken)
+  return accessToken;
   // -------------------------------
 }
 
@@ -47,6 +68,7 @@ function generateToken(user, secret) {
 // -------------------------------
 
 const mutationResolvers = app => ({
+  
   async signup(
     parent,
     {
@@ -55,6 +77,7 @@ const mutationResolvers = app => ({
     { pgResource, req },
   ) {
     try {
+      //console.log("singup run" + JSON.stringify(user))
       /**
        * @TODO: Authentication - Server
        *
@@ -65,16 +88,17 @@ const mutationResolvers = app => ({
        * The solution is to create a cryptographic hash of the password provided,
        * and store that instead. The password can be decoded using the original password.
        */
-      // @TODO: Use bcrypt to generate a cryptographic hash to conceal the user's password before storing it.
-      const hashedPassword = await bcrypt.hash(input.password, 4);
-      // -------------------------------
+      // @TODO: Use bcrypt to generate a cryptographic hash to conceal the user's password before storing it.var salt = bcrypt.genSaltSync(saltRounds);
+      let salt = 10;
+      let hashedPassword = await bcrypt.hash(password, salt);
+      // console.log('hashedPassword: ' + hashedPassword)      // -------------------------------
 
-      const user = await context.pgResource.createUser({
-        fullname: args.user.fullname,
-        email: args.user.email,
+      const user = await pgResource.createUser({
+        fullname,
+        email,
         password: hashedPassword,
       });
-
+      // console.log('token')÷
       const token = generateToken(user, app.get("JWT_SECRET"));
 
       setCookie({
@@ -84,7 +108,7 @@ const mutationResolvers = app => ({
       });
 
       return {
-        toekn,
+        token,
         user,
       };
     } catch (e) {
@@ -100,8 +124,9 @@ const mutationResolvers = app => ({
     { pgResource, req },
   ) {
     try {
-      const user = await context.pgResource.getUserAndPasswordForVerification(
-        args.user.email,
+      console.log('login' + JSON.stringify(email))
+      const user = await pgResource.getUserAndPasswordForVerification(
+        email
       );
       if (!user) throw "User was not found.";
       /**
@@ -110,12 +135,12 @@ const mutationResolvers = app => ({
        *  To verify the user has provided the correct password, we'll use the provided password
        *  they submitted from the login form to decrypt the 'hashed' version stored in out database.
        */
-      
       // Use bcrypt to compare the provided password to 'hashed' password stored in your database.
-      const isPasswordValid = await bcrypt.compare(input.password, user.password);
-      if (!isPasswordValid){
-        throw "Invalid Password";
-      }
+      let valid = await bcrypt.compare(password, user.password);
+        console.log(valid)
+      // const valid = false;
+      // -------------------------------
+      if (!valid) throw "Invalid Password";
 
       const token = generateToken(user, app.get("JWT_SECRET"));
 
@@ -138,8 +163,8 @@ const mutationResolvers = app => ({
     context.req.res.clearCookie(app.get("JWT_COOKIE_NAME"));
     return true;
   },
-  async addItem(parent, args, context, info) {
-    console.log(args)
+  async addItem(parent, args, {pgResource}, info) {
+    console.log('addItem run:' + JSON.stringify(args))
     /**
      *  @TODO: Destructuring
      *
@@ -152,10 +177,11 @@ const mutationResolvers = app => ({
      *  Again, you may look at the user resolver for an example of what
      *  destructuring should look like.
      */
-    const user = await jwt.decode(context.token, app.get("JWT_SECRET"));
-    const newItem = await context.pgResource.saveNewItem({
+    //const user = await jwt.decode(context.token, app.get("JWT_SECRET"));
+    const newItem = await pgResource.saveNewItem({
       item: args,
-      user: user,
+      user: 0
+      //user: user,
     });
     return newItem;
   },
